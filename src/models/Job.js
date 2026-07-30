@@ -1,4 +1,9 @@
 import mongoose from "mongoose";
+import {
+  JOB_TYPES,
+  EXPERIENCE_LEVELS,
+  JOB_STATUSES,
+} from "../constants/jobConstants.js";
 
 const jobSchema = new mongoose.Schema(
   {
@@ -39,7 +44,7 @@ const jobSchema = new mongoose.Schema(
     jobType: {
       type: String,
       enum: {
-        values: ["Full-time", "Part-time", "Internship", "Contract", "Remote"],
+        values: JOB_TYPES,
         message: "{VALUE} is not a valid job type",
       },
       required: [true, "Job type is required"],
@@ -48,14 +53,7 @@ const jobSchema = new mongoose.Schema(
     experience: {
       type: String,
       enum: {
-        values: [
-          "Fresher",
-          "1+ Years",
-          "2+ Years",
-          "3+ Years",
-          "5+ Years",
-          "10+ Years",
-        ],
+        values: EXPERIENCE_LEVELS,
         message: "{VALUE} is not a valid experience level",
       },
       required: [true, "Experience is required"],
@@ -87,7 +85,7 @@ const jobSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: {
-        values: ["Open", "Closed"],
+        values: JOB_STATUSES,
         message: "{VALUE} is not a valid status",
       },
       default: "Open",
