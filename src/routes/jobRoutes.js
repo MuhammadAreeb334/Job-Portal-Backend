@@ -2,17 +2,17 @@ import express from "express";
 import {
   createJob,
   getMyJobs,
-  // updateJob,
-  // deleteJob,
-  // getAllJobs,
-  // getJobById,
+  updateJob,
+  deleteJob,
+  getAllJobs,
+  getJobById,
 } from "../controllers/jobController.js";
 import { protect } from "../middleware/authMiddleware.js";
 import authorize from "../middleware/roleMiddleware.js";
 
 import {
   createJobValidation,
-  // updateJobValidation,
+  updateJobValidation,
 } from "../validations/jobValidation.js";
 
 import { validate } from "../validations/authValidation.js";
@@ -27,26 +27,21 @@ router.post(
   validate,
   createJob,
 );
+router.put(
+  "/:id",
+  protect,
+  authorize("recruiter"),
+  updateJobValidation,
+  validate,
+  updateJob,
+);
+router.delete("/:id", protect, authorize("recruiter"), deleteJob);
+
 router.get("/my-jobs", protect, authorize("recruiter"), getMyJobs);
-
-// Future Routes
-
-
-// router.put(
-//   "/:id",
-//   protect,
-//   authorize("recruiter"),
-//   updateJobValidation,
-//   validate,
-//   updateJob
-// );
-
-// router.delete("/:id", protect, authorize("recruiter"), deleteJob);
 
 // Candidate Routes
 
-// router.get("/", getAllJobs);
-
-// router.get("/:id", getJobById);
+router.get("/", getAllJobs);
+router.get("/:id", getJobById);
 
 export default router;
