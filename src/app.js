@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 import authRoutes from "./routes/authRoutes.js";
 import companyRoutes from "./routes/companyRoutes.js";
 import jobRoutes from "./routes/jobRoutes.js"
+import applicationRoutes from "./routes/applicationRoutes.js"
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use(cookieParser());
 app.use("/api/auth", authRoutes);
 app.use("/api/companies", companyRoutes);
 app.use("/api/jobs", jobRoutes);
+app.use("/api/application", applicationRoutes);
 
 app.get("/", (req, res) => {
   res.send("Job Portal API is Running.....");
