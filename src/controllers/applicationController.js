@@ -55,3 +55,170 @@ export const applyForJob = async (req, res) => {
     });
   }
 };
+
+export const withdrawApplication = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const application = await Application.findById(id);
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found.",
+      });
+    }
+
+    if (application.candidate.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to withdraw this application.",
+      });
+    }
+
+    if (application.status === "Accepted") {
+      return res.status(400).json({
+        success: false,
+        message: "Accepted applications cannot be withdrawn.",
+      });
+    }
+
+    await application.deleteOne();
+    return res.status(200).json({
+      success: true,
+      message: "Application withdrawn successfully.",
+    });
+  } catch (error) {
+    console.error("Withdraw Application Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+export const getMyApplications = async (req, res) => {
+  try {
+    const applications = await Application.find({
+      candidate: req.user._id,
+    })
+      .populate({
+        path: "job",
+        select:
+          "title salary location jobType experience status company createdAt",
+        populate: {
+          path: "company",
+          select: "name logo location industry",
+        },
+      })
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: applications.length,
+      applications,
+    });
+  } catch (error) {
+    console.error("Get My Applications Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+export const getApplicantsByJob = async (req, res) => {
+  try {
+    const { jobId } = req.params;
+
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found.",
+      });
+    }
+
+    if (job.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to view applicants for this job.",
+      });
+    }
+
+    const applications = await Application.find({
+      job: jobId,
+    })
+      .populate("candidate", "name email avatar skills location bio resume")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      success: true,
+      count: applications.length,
+      applications,
+    });
+  } catch (error) {
+    console.error("Get Applicants Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
+
+export const updateApplicationStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const application = await Application.findById(id);
+
+    if (!application) {
+      return res.status(404).json({
+        success: false,
+        message: "Application not found.",
+      });
+    }
+
+    const job = await Job.findById(application.job);
+
+    if (!job) {
+      return res.status(404).json({
+        success: false,
+        message: "Job not found.",
+      });
+    }
+
+    if (job.postedBy.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to update this application.",
+      });
+    }
+
+    application.status = status;
+
+    await application.save();
+
+    await application.populate({
+      path: "candidate",
+      select: "name email",
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: "Application status updated successfully.",
+      application,
+    });
+  } catch (error) {
+    console.error("Update Application Status Error:", error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error.",
+    });
+  }
+};
