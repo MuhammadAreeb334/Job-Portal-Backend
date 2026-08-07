@@ -1,12 +1,19 @@
 import Application from "../models/Application.js";
 import Job from "../models/Job.js";
 import User from "../models/User.js";
+import sendEmail from "../utils/sendEmail.js";
+import { applicationSubmittedTemplate } from "../utils/emailTemplates.js";
+import { applicationStatusTemplate } from "../utils/emailTemplates.js";
 
 export const applyForJob = async (req, res) => {
   try {
     const { jobId, coverLetter } = req.body;
 
-    const job = await Job.findOne({ _id: jobId, status: "Open" });
+    const job = await Job.findOne({
+      _id: jobId,
+      status: "Open",
+    }).populate("company", "name");
+
     if (!job) {
       return res.status(404).json({
         success: false,
@@ -26,12 +33,12 @@ export const applyForJob = async (req, res) => {
     }
 
     const candidate = await User.findById(req.user._id);
-    // if (!candidate.resume?.url) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     message: "Please upload your resume before applying.",
-    //   });
-    // }
+    if (!candidate.resume?.url) {
+      return res.status(400).json({
+        success: false,
+        message: "Please upload your resume before applying.",
+      });
+    }
 
     const application = await Application.create({
       candidate: req.user._id,
@@ -40,6 +47,20 @@ export const applyForJob = async (req, res) => {
       coverLetter,
       status: "Pending",
     });
+
+    try {
+      await sendEmail({
+        to: candidate.email,
+        subject: "Application Submitted",
+        html: applicationSubmittedTemplate(
+          candidate.name,
+          job.title,
+          job.company.name,
+        ),
+      });
+    } catch (error) {
+      console.error("Application Email Error:", error.message);
+    }
 
     return res.status(201).json({
       success: true,
@@ -183,7 +204,7 @@ export const updateApplicationStatus = async (req, res) => {
       });
     }
 
-    const job = await Job.findById(application.job);
+    const job = await Job.findById(application.job).populate("company", "name");
 
     if (!job) {
       return res.status(404).json({
@@ -207,6 +228,20 @@ export const updateApplicationStatus = async (req, res) => {
       path: "candidate",
       select: "name email",
     });
+
+    try {
+      await sendEmail({
+        to: application.candidate.email,
+        subject: `Application Status Updated: ${status}`,
+        html: applicationStatusTemplate(
+          application.candidate.name,
+          job.title,
+          status,
+        ),
+      });
+    } catch (error) {
+      console.error("Status Email Error:", error.message);
+    }
 
     return res.status(200).json({
       success: true,

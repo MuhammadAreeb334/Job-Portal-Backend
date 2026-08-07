@@ -2,6 +2,8 @@ import bcrypt from "bcrypt";
 import User from "../models/User.js";
 import generateToken from "../utils/generateToken.js";
 import cookieOptions from "../utils/cookieOptions.js";
+import sendEmail from "../utils/sendEmail.js";
+import { welcomeEmailTemplate } from "../utils/emailTemplates.js";
 
 export const register = async (req, res) => {
   try {
@@ -23,6 +25,16 @@ export const register = async (req, res) => {
       password: hashPassword,
       role,
     });
+
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Welcome to Job Portal",
+        html: welcomeEmailTemplate(user.name),
+      });
+    } catch (error) {
+      console.error("Welcome Email Error:", error.message);
+    }
 
     const token = generateToken(user._id);
 
