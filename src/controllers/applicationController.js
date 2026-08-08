@@ -2,8 +2,11 @@ import Application from "../models/Application.js";
 import Job from "../models/Job.js";
 import User from "../models/User.js";
 import sendEmail from "../utils/sendEmail.js";
-import { applicationSubmittedTemplate } from "../utils/emailTemplates.js";
-import { applicationStatusTemplate } from "../utils/emailTemplates.js";
+import {
+  applicationSubmittedTemplate,
+  applicationStatusTemplate,
+} from "../utils/emailTemplates.js";
+import createNotification from "../utils/createNotification.js";
 
 export const applyForJob = async (req, res) => {
   try {
@@ -46,6 +49,13 @@ export const applyForJob = async (req, res) => {
       resume: candidate.resume,
       coverLetter,
       status: "Pending",
+    });
+
+    await createNotification({
+      receiver: job.postedBy,
+      title: "New Job Application",
+      message: `${candidate.name} applied for ${job.title}.`,
+      type: "application",
     });
 
     try {
@@ -227,6 +237,13 @@ export const updateApplicationStatus = async (req, res) => {
     await application.populate({
       path: "candidate",
       select: "name email",
+    });
+
+    await createNotification({
+      receiver: application.candidate._id,
+      title: "Application Status Updated",
+      message: `Your application for ${job.title} has been updated to ${status}.`,
+      type: "application",
     });
 
     try {
